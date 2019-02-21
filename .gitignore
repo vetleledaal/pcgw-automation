@@ -1,0 +1,3 @@
+/notebooks/.ipynb_checkpoints/
+/private/*
+!/private/user-config.py
