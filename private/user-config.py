@@ -1,4 +1,5 @@
 #mylang='en'
+put_throttle = 2
 console_encoding = 'utf-8'
 password_file = 'user-password.py'
 max_external_links = 4

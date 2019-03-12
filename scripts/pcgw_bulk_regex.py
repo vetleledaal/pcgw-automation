@@ -1,5 +1,6 @@
 import os 
 import re
+import sys
 
 os.environ['PYWIKIBOT2_DIR'] = '../private/'
 import pywikibot
@@ -9,10 +10,12 @@ import pywikibot
 PAGE_LIST_FILE = 'pages.txt'
 
 PATTERNS = (
-	# find, replacement = '', reason = None, expected occurences = 0, flags = 0
-	(r'$', '\nsomething', 'append something'),
-	(r'8', 'eight', 'replace numbers with words')
+	# find, replacement, reason = None, expected occurences = 0, flags = 0
+	(r'<noinclude>\[\[Category:Series]]<\/noinclude>', '<noinclude>[[Category:Series]]{{Series/ask}}</noinclude>', 'spice up the series page', 1),
 )
+
+REASON_OVERRIDE = None
+#REASON_OVERRIDE = ''
 
 # Task config END
 
@@ -46,6 +49,10 @@ def summarizer(reasons):
 	# get total length: sum(len(s) for s in summary)
 	return ' '.join(summary)[:255]
 
+def save_callback(page, exception_instance):
+	success = exception_instance is None
+	print('\033[3%dm[%s]\033[0m %s' % (2 if success else 1, 'OK' if success else 'FAIL', page.title()), flush=True)
+
 if __name__ == '__main__':
 	# PWB setup
 	site = pywikibot.Site('PCGW')
@@ -58,41 +65,49 @@ if __name__ == '__main__':
 
 	bad_pages = {}
 	
-	# For each page to process ...
-	for page_title in page_titles:
-	
-		# Get a PWB object for that page
-		page = pywikibot.Page(site, page_title)
+	try:
+		# For each page to process ...
+		for page_title in page_titles:
+			# Get a PWB object for that page
+			page = pywikibot.Page(site, page_title)
 
-		# Does the page exists? We don't use .exists() since we can't really
-		# do anything with an empty page and it's being cached for later
-		if page.text == '':
-			bad_pages.setdefault('page_not_found', []).append(page_title)
-			continue
-
-		
-		page_content_new = page.text
-		reasons = []
-		
-		# Actually replace content
-		for find, repl, reason, exp, re_flags in patterns:
-			page_content_new_2, repl_count = re.subn(find, repl, page_content_new, flags = re_flags)
+			# Get page contents
+			page_content = page.text
 			
-			# Don't make changes if the expected replacements don't match
-			if exp != 0 and exp != repl_count:
-				bad_pages.setdefault('unexpected_count', []).append((repl_count, page_title))
+			# Does the page exists? We don't use .exists() since we can't really
+			# do anything with an empty page and it's already cached
+			if page_content == '':
+				bad_pages.setdefault('page_not_found', []).append(page_title)
+				print(bad_pages['page_not_found'][-1])
 				continue
-			
-			# Keep changes
-			page_content_new = page_content_new_2
 
-			# Add reason, if this pattern did something
-			if repl_count > 0 and reason is not None and reason not in reasons:
-				reasons.append(reason)
-		
-		# Commit changes
-		page.text = page_content_new
-		page.save(summarizer(reasons))
-	
+			
+			page_content_new = page_content
+			reasons = []
+			
+			# Actually replace content
+			for find, repl, reason, exp, re_flags in patterns:
+				page_content_new_2, repl_count = re.subn(find, repl, page_content_new, flags=re_flags)
+				
+				# Don't make changes if the expected replacements don't match
+				if exp != 0 and exp != repl_count:
+					bad_pages.setdefault('unexpected_count', []).append((repl_count, page_title))
+					print(bad_pages['unexpected_count'][-1])
+					continue
+				
+				# Keep changes
+				page_content_new = page_content_new_2
+
+				# Add reason, if this pattern did something
+				if repl_count > 0 and reason is not None and reason not in reasons:
+					reasons.append(reason)
+			
+			# Commit changes, if anything has changed
+			if page_content != page_content_new:
+				page.text = page_content_new
+				page.save(summarizer(reasons), quiet=True, callback=save_callback)
+	except KeyboardInterrupt:
+		pass
+
 	# TODO: save to file or something
 	print(bad_pages)
