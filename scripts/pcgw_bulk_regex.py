@@ -11,7 +11,16 @@ PAGE_LIST_FILE = 'pages.txt'
 
 PATTERNS = (
 	# find, replacement, reason = None, expected occurences = 0, flags = 0
-	(r'<noinclude>\[\[Category:Series]]<\/noinclude>', '<noinclude>[[Category:Series]]{{Series/ask}}</noinclude>', 'spice up the series page', 1),
+	(r'<noinclude>\[\[Category:Series]]<\/noinclude>', '<noinclude>[[Category:Series]]{{Series/ask}}</noinclude>', 'spice up the series page', 0), # Fix Series pages
+	#(r'(?<!\[\[Category:Pages with corrupt images\]\])$', '\n[[Category:Pages with corrupt images]]', 'add category: [[Category:Pages with corrupt images]]', 1), # Add corrupt images category, if not already set
+	(r'^([\ \t]*\|(?:(?!notes).)+?=[\ \t]*)yes$', r'\1true', 'replace yes/no with true/false', 0, re.MULTILINE),
+	(r'^([\ \t]*\|(?:(?!notes).)+?=[\ \t]*)no$', r'\1false', 'replace yes/no with true/false', 0, re.MULTILINE),
+	(r'^\|gogcom page\s*= ', r'|gogcom id    = ', 'update gogcom id', 0, re.MULTILINE),
+	(r'^\|gogcom page side\s*= ', r'|gogcom id side = ', 'update gogcom id', 0, re.MULTILINE),
+	(r'^(\|notes\s*= )(\s*\|fan\s*=[\ \t]*)\n\|fan notes\s*=[\ \t]*([^\n]*)', r'\1\3\2', 'move fan notes', 0, re.MULTILINE),
+	(r'^(\|notes\s*= )([^\s]+?)\.?(\s*\|fan\s*=[\ \t]*)\n\|fan notes\s*=\s*([^\n]*?)\.?(?:$|\n)', r'\1\2. \4.\3', 'move fan notes', 0, re.MULTILINE),
+	
+	
 )
 
 REASON_OVERRIDE = None
@@ -61,8 +70,10 @@ if __name__ == '__main__':
 	patterns = Patterns(PATTERNS)
 
 	# Read pages to process
-	page_titles = [l.rstrip() for l in open(PAGE_LIST_FILE)]
-
+	with open(PAGE_LIST_FILE, encoding='utf8') as f:
+		page_titles = [l.rstrip() for l in f]
+	
+	print('To process:', page_titles[:5])
 	bad_pages = {}
 	
 	try:
@@ -73,6 +84,7 @@ if __name__ == '__main__':
 
 			# Get page contents
 			page_content = page.text
+			print('Got page with', len(page_content), 'bytes')
 			
 			# Does the page exists? We don't use .exists() since we can't really
 			# do anything with an empty page and it's already cached
@@ -106,6 +118,9 @@ if __name__ == '__main__':
 			if page_content != page_content_new:
 				page.text = page_content_new
 				page.save(summarizer(reasons), quiet=True, callback=save_callback)
+			else:
+				print('No changes?')
+				print(reasons)
 	except KeyboardInterrupt:
 		pass
 
