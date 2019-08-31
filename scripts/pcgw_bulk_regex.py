@@ -19,8 +19,27 @@ PATTERNS = (
 	(r'^\|gogcom page side\s*= ', r'|gogcom id side = ', 'update gogcom id', 0, re.MULTILINE),
 	(r'^(\|notes\s*= )(\s*\|fan\s*=[\ \t]*)\n\|fan notes\s*=[\ \t]*([^\n]*)', r'\1\3\2', 'move fan notes', 0, re.MULTILINE),
 	(r'^(\|notes\s*= )([^\s]+?)\.?(\s*\|fan\s*=[\ \t]*)\n\|fan notes\s*=\s*([^\n]*?)\.?(?:$|\n)', r'\1\2. \4.\3', 'move fan notes', 0, re.MULTILINE),
-	
-	
+	(r'https?:\/\/(www\.)?wsgf\.org\/forums\/', r'https://www.wsgf.org/phpBB3/', 'update WSGF link'),
+	(r'''{{Save game cloud syncing
+(?:\|discord *= *(.*?)
+\|discord notes *= *(.*?)
+)?(?:\|epic games store *= *(.*?)
+\|epic games store notes *= *(.*?)
+)?(?:\|gog galaxy *= *(.*?)
+\|gog galaxy notes *= *(.*?)
+)?(?:\|origin *= *(.*?)
+\|origin notes *= *(.*?)
+)?(?:\|steam cloud *= *(.*?)
+\|steam cloud notes *= *(.*?)
+)?(?:\|uplay *= *(.*?)
+\|uplay notes *= *(.*?)
+)?(?:\|xbox cloud *= *(.*?)
+\|xbox cloud notes *= *(.*?)
+)?}}''',
+	r'{{Save game cloud syncing\r\n|discord                = \1\r\n|discord notes          = \2\r\n|epic games store       = \3\r\n|epic games store notes = \4\r\n|gog galaxy             = \5\r\n|gog galaxy notes       = \6\r\n|origin                 = \7\r\n|origin notes           = \8\r\n|steam cloud            = \9\r\n|steam cloud notes      = \10\r\n|uplay                  = \11\r\n|uplay notes            = \12\r\n|xbox cloud             = \13\r\n|xbox cloud notes       = \14\r\n}}',
+	'update template usage',
+	1),
+
 )
 
 REASON_OVERRIDE = None
